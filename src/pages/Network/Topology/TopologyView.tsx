@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import G6 from "@antv/g6";
-// @ts-ignore
-import insertCss from "insert-css";
+ import insertCss from "insert-css";
 import chroma from "chroma-js";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -9,7 +8,7 @@ import { RefreshCw, ZoomIn, ZoomOut, Maximize2, Download } from "lucide-react";
 import type { LldpResponse } from "../../../types/topology";
 import { transformLldpToG6, getNodeTooltipContent } from "./topologyParser";
 
-insertCss(`
+(insertCss as any)(`
   .g6-component-tooltip {
     background-color: rgba(255, 255, 255, 0.95);
     padding: 10px 15px;

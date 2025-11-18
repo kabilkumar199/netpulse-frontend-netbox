@@ -541,3 +541,40 @@ export interface SlurpitTopology {
   }>;
 }
 
+// NetBox Device Creation Payload
+export interface NetBoxDeviceCreatePayload {
+  name: string;
+  device_type: number; // Device type ID
+  role: number; // Device role ID
+  tenant?: number; // Tenant ID (optional)
+  platform?: number; // Platform ID (optional)
+  serial?: string;
+  asset_tag?: string;
+  site: number; // Site ID (required)
+  location?: number; // Location ID (optional)
+  rack?: number; // Rack ID (optional)
+  position?: number; // Rack position (optional, max 999)
+  face?: 'front' | 'rear'; // Rack face (optional)
+  latitude?: number;
+  longitude?: number;
+  status?: 'offline' | 'active' | 'planned' | 'staged' | 'failed' | 'inventory' | 'decommissioning';
+  airflow?: 'front-to-rear' | 'rear-to-front' | 'left-to-right' | 'right-to-left' | 'side-to-rear' | 'passive' | 'mixed';
+  primary_ip4?: number; // IP address ID (optional)
+  primary_ip6?: number; // IPv6 address ID (optional)
+  oob_ip?: number; // Out-of-band IP address ID (optional)
+  cluster?: number; // Cluster ID (optional)
+  virtual_chassis?: number; // Virtual chassis ID (optional)
+  vc_position?: number; // Virtual chassis position (optional, max 255)
+  vc_priority?: number; // Virtual chassis priority (optional, max 255)
+  description?: string;
+  comments?: string;
+  config_template?: number; // Config template ID (optional)
+  local_context_data?: string | Record<string, any>;
+  tags?: Array<{
+    name?: string;
+    slug?: string;
+    color?: string;
+  }>;
+  custom_fields?: Record<string, any>;
+}
+

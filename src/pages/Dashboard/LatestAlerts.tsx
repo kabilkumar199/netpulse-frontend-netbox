@@ -1,5 +1,6 @@
 // src/components/shared/LatestAlerts.tsx
 import React from 'react';
+import { useNavigate } from 'react-router-dom'; 
 import { AlertTriangle, Loader2, CheckCircle } from 'lucide-react';
 import { AlertSkeleton } from './AlertSkeleton';
 // --- Type Definitions ---
@@ -19,7 +20,7 @@ interface LatestAlertsProps {
 }
 
 const LatestAlerts: React.FC<LatestAlertsProps> = ({ alerts, isLoading = false, error = null }) => {
-  
+  const navigate = useNavigate();
   const getSeverityClasses = (severity: Alert['severity']) => {
     switch (severity) {
       case 'critical':
@@ -66,10 +67,10 @@ const LatestAlerts: React.FC<LatestAlertsProps> = ({ alerts, isLoading = false, 
       <p className="font-semibold text-center">{error}</p>
     </div>
   ) : alerts.length > 0 ? (
-    alerts.map((alert) => (
+    alerts.slice(0,5).map((alert) => (
       <a 
         key={alert.id} 
-        href={alert.link} 
+        onClick={() => navigate("/management/alerts")}
         className="block p-3 rounded-lg bg-gray-700 transition-colors hover:bg-gray-600"
       >
         <div className="flex items-center justify-between mb-1">

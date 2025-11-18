@@ -1,34 +1,54 @@
-import React from 'react';
+import React from "react";
 
 // Common table utility functions and components
 
 export const getStatusColor = (status: string) => {
   switch (status) {
-    case 'up': return 'bg-green-900 text-green-300';
-    case 'down': return 'bg-red-900 text-red-300';
-    case 'warning': return 'bg-yellow-900 text-yellow-300';
-    case 'unknown': return 'bg-gray-700 text-gray-300';
-    case 'active': return 'bg-green-900 text-green-300';
-    case 'inactive': return 'bg-gray-700 text-gray-300';
-    case 'pending': return 'bg-yellow-900 text-yellow-300';
-    case 'error': return 'bg-red-900 text-red-300';
-    default: return 'bg-gray-700 text-gray-300';
+    case "up":
+      return "bg-green-900 text-green-300";
+    case "down":
+      return "bg-red-900 text-red-300";
+    case "warning":
+      return "bg-yellow-900 text-yellow-300";
+    case "unknown":
+      return "bg-gray-700 text-gray-300";
+    case "active":
+      return "bg-green-900 text-green-300";
+    case "inactive":
+      return "bg-gray-700 text-gray-300";
+    case "pending":
+      return "bg-yellow-900 text-yellow-300";
+    case "error":
+      return "bg-red-900 text-red-300";
+    default:
+      return "bg-gray-700 text-gray-300";
   }
 };
 
 export const getStatusIcon = (status: string) => {
   switch (status) {
-    case 'up': return '🟢';
-    case 'down': return '🔴';
-    case 'warning': return '🟡';
-    case 'unknown': return '⚪';
-    case 'active': return '🟢';      
-    case 'inactive': return '⚪';
-    case 'pending': return '🟡';
-    case 'error': return '🔴';
-    case 'Reachable': return '🟢';
-    case 'Unreachable': return '🔴';
-    default: return '⚪';
+    case "up":
+      return "🟢";
+    case "down":
+      return "🔴";
+    case "warning":
+      return "🟡";
+    case "unknown":
+      return "⚪";
+    case "active":
+      return "🟢";
+    case "inactive":
+      return "⚪";
+    case "pending":
+      return "🟡";
+    case "error":
+      return "🔴";
+    case "Reachable":
+      return "🟢";
+    case "Unreachable":
+      return "🔴";
+    default:
+      return "⚪";
   }
 };
 
@@ -39,7 +59,7 @@ export const formatLastSeen = (date: Date) => {
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
 
-  if (minutes < 1) return 'Just now';
+  if (minutes < 1) return "Just now";
   if (minutes < 60) return `${minutes}m ago`;
   if (hours < 24) return `${hours}h ago`;
   return `${days}d ago`;
@@ -47,32 +67,32 @@ export const formatLastSeen = (date: Date) => {
 
 export const formatDate = (date: Date | string) => {
   const d = new Date(date);
-  return d.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+  return d.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 };
 
 export const formatNumber = (num: number, decimals = 0) => {
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals
+    maximumFractionDigits: decimals,
   }).format(num);
 };
 
 export const formatBytes = (bytes: number, decimals = 2) => {
-  if (bytes === 0) return '0 Bytes';
-  
+  if (bytes === 0) return "0 Bytes";
+
   const k = 1024;
   const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-  
+  const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
 };
 
 export const formatDuration = (seconds: number) => {
@@ -88,37 +108,54 @@ export const formatDuration = (seconds: number) => {
 };
 
 // Common status badge component
-export const StatusBadge: React.FC<{ status: string; className?: string }> = ({ 
-  status, 
-  className = '' 
+export const StatusBadge: React.FC<{ status: string; className?: string }> = ({
+  status,
+  className = "",
 }) => (
-  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(status)} ${className}`}>
+  <span
+    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+      status
+    )} ${className}`}
+  >
     <span className="mr-1">{getStatusIcon(status)}</span>
     {status.toUpperCase()}
   </span>
 );
 
 // Common device icon component
-export const DeviceIcon: React.FC<{ vendor: string; className?: string }> = ({ 
-  vendor, 
-  className = 'h-10 w-10' 
-}) => {
-  const getIcon = (vendor: string) => {
-    switch (vendor.toLowerCase()) {
-      case 'cisco': return '🔷';
-      case 'dell': return '💻';
-      case 'fortinet': return '🛡️';
-      case 'juniper': return '🌲';
-      case 'aruba': return '📡';
-      case 'hp': return '🖥️';
-      case 'netgear': return '📶';
-      case 'mikrotik': return '🔧';
-      default: return '🖥️';
+export const DeviceIcon: React.FC<{
+  vendor?: string | null;
+  className?: string;
+}> = ({ vendor, className = "h-10 w-10" }) => {
+  const getIcon = (vendor: string | null | undefined) => {
+    const v = vendor?.toLowerCase() || "unknown";
+
+    switch (v) {
+      case "cisco":
+        return "🔷";
+      case "dell":
+        return "💻";
+      case "fortinet":
+        return "🛡️";
+      case "juniper":
+        return "🌲";
+      case "aruba":
+        return "📡";
+      case "hp":
+        return "🖥️";
+      case "netgear":
+        return "📶";
+      case "mikrotik":
+        return "🔧";
+      default:
+        return "🖥️";
     }
   };
 
   return (
-    <div className={`${className} rounded-lg bg-gray-600 flex items-center justify-center`}>
+    <div
+      className={`${className} rounded-lg bg-gray-600 flex items-center justify-center`}
+    >
       <span className="text-lg">{getIcon(vendor)}</span>
     </div>
   );
@@ -133,13 +170,15 @@ export const ActionButtons: React.FC<{
     icon?: React.ReactNode;
   }>;
   className?: string;
-}> = ({ actions, className = '' }) => (
+}> = ({ actions, className = "" }) => (
   <div className={`flex space-x-2 ${className}`}>
     {actions.map((action, index) => (
       <button
         key={index}
         onClick={action.onClick}
-        className={`text-sm font-medium ${action.className || 'text-blue-400 hover:text-blue-300'}`}
+        className={`text-sm font-medium ${
+          action.className || "text-blue-400 hover:text-blue-300"
+        }`}
       >
         {action.icon && <span className="mr-1">{action.icon}</span>}
         {action.label}
@@ -154,9 +193,9 @@ export const ProgressBar: React.FC<{
   max?: number;
   className?: string;
   showLabel?: boolean;
-}> = ({ value, max = 100, className = '', showLabel = true }) => {
+}> = ({ value, max = 100, className = "", showLabel = true }) => {
   const percentage = Math.min(100, Math.max(0, (value / max) * 100));
-  
+
   return (
     <div className={`w-full ${className}`}>
       <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
@@ -180,26 +219,28 @@ export const ProgressBar: React.FC<{
 // Common chip/tag component
 export const Chip: React.FC<{
   label: string;
-  color?: 'blue' | 'green' | 'yellow' | 'red' | 'gray';
-  size?: 'sm' | 'md' | 'lg';
+  color?: "blue" | "green" | "yellow" | "red" | "gray";
+  size?: "sm" | "md" | "lg";
   className?: string;
-}> = ({ label, color = 'gray', size = 'md', className = '' }) => {
+}> = ({ label, color = "gray", size = "md", className = "" }) => {
   const colorClasses = {
-    blue: 'bg-blue-900 text-blue-300',
-    green: 'bg-green-900 text-green-300',
-    yellow: 'bg-yellow-900 text-yellow-300',
-    red: 'bg-red-900 text-red-300',
-    gray: 'bg-gray-700 text-gray-300'
+    blue: "bg-blue-900 text-blue-300",
+    green: "bg-green-900 text-green-300",
+    yellow: "bg-yellow-900 text-yellow-300",
+    red: "bg-red-900 text-red-300",
+    gray: "bg-gray-700 text-gray-300",
   };
 
   const sizeClasses = {
-    sm: 'px-2 py-0.5 text-xs',
-    md: 'px-2.5 py-0.5 text-xs',
-    lg: 'px-3 py-1 text-sm'
+    sm: "px-2 py-0.5 text-xs",
+    md: "px-2.5 py-0.5 text-xs",
+    lg: "px-3 py-1 text-sm",
   };
 
   return (
-    <span className={`inline-flex items-center rounded-full font-medium ${colorClasses[color]} ${sizeClasses[size]} ${className}`}>
+    <span
+      className={`inline-flex items-center rounded-full font-medium ${colorClasses[color]} ${sizeClasses[size]} ${className}`}
+    >
       {label}
     </span>
   );
@@ -210,7 +251,7 @@ export const TableSkeleton: React.FC<{
   rows?: number;
   columns?: number;
   className?: string;
-}> = ({ rows = 5, columns = 4, className = '' }) => (
+}> = ({ rows = 5, columns = 4, className = "" }) => (
   <div className={`animate-pulse ${className}`}>
     {Array.from({ length: rows }).map((_, rowIndex) => (
       <div key={rowIndex} className="flex space-x-4 py-4">
@@ -239,5 +280,5 @@ export default {
   ActionButtons,
   ProgressBar,
   Chip,
-  TableSkeleton
+  TableSkeleton,
 };

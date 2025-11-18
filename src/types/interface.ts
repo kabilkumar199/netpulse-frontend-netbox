@@ -6,9 +6,11 @@ export interface InterfaceIp {
 }
 
 export interface InterfaceResponse {
-  InterfaceIp: InterfaceIp[];
-  Name: {
-    PlatformName: string;
+  InterfaceIp?: InterfaceIp[];
+  InterfaceMgmt?: InterfaceIp[];
+  InterfaceLoopback?: InterfaceIp[];
+  Name?: {
+    PlatformName?: string;
   };
 }
 

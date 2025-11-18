@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import api from '../../services/api/api';
+import {api} from '../../services/api/api';
 import { User, Plus, Edit, Trash2, Shield, Mail, Phone, Calendar, Search, Filter, MoreVertical } from 'lucide-react';
 import { API_ENDPOINTS } from "../../helpers/url_helper";
 import { toast } from 'react-toastify';
@@ -100,28 +100,33 @@ const UserList: React.FC<UserListProps> = ({ onClose }) => {
   };
 
   const fetchUsers = React.useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await api.get(API_ENDPOINTS.GET_USERS);
-      const apiData = response.data;
-      const mappedUsers = apiData.map(mapApiUserToComponentUser);
-      setUsers(mappedUsers);
+  try {
+    setLoading(true);
+    setError(null);
 
-    } catch (err) {
-      let message = 'An unknown error occurred';
-      if (axios.isAxiosError(err)) {
-        message = err.response?.data?.message || err.message;
-      } else if (err instanceof Error) {
-        message = err.message;
-      }
-      setError(message);
-      console.error('Error fetching users:', message);
-      toast.error(`Failed to load users: ${message}`);
-    } finally {
-      setLoading(false);
+    // api.get returns "data" directly, NOT AxiosResponse
+    const apiData = await api.get<User[]>(API_ENDPOINTS.GET_USERS);
+
+    const mappedUsers = apiData.map(mapApiUserToComponentUser);
+    setUsers(mappedUsers);
+
+  } catch (err) {
+    let message = 'An unknown error occurred';
+
+    if (axios.isAxiosError(err)) {
+      message = err.response?.data?.message || err.message;
+    } else if (err instanceof Error) {
+      message = err.message;
     }
-  }, []);
+
+    setError(message);
+    console.error('Error fetching users:', message);
+    toast.error(`Failed to load users: ${message}`);
+  } finally {
+    setLoading(false);
+  }
+}, []);
+
 
   React.useEffect(() => {
     fetchUsers();
@@ -157,6 +162,8 @@ const UserList: React.FC<UserListProps> = ({ onClose }) => {
       .replace(/\s+/g, '');
 
     const payload = {
+      firstname:values.firstName,
+      lastname:values.lastName,
       username: username,
       email: values.email,
       password: values.password,

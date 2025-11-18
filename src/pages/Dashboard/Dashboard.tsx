@@ -13,7 +13,7 @@ import {
   Cpu,
   PieChart as PieChartIcon,
 } from "lucide-react";
-import { api } from "../../helpers/api/apiHelper";
+import {api} from "../../services/api/api";
 import StatsCard from "../../components/charts/StatsCard";
 import DonutStatsCard from "./DonutStatsCard";
 import LatestAlerts from "./LatestAlerts";
@@ -119,7 +119,7 @@ const Dashboard: React.FC = () => {
   const osDistributionData = useMemo(() => {
     const TOP_N = 3;
     const counts = devices.reduce((acc, device) => {
-      const os = device.osVersion || "Unknown";
+      const os = String(device.osVersion ?? "Unknown");
       acc[os] = (acc[os] || 0) + 1;
       return acc;
     }, {} as { [key: string]: number });

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
-import axiosInstance from "../../services/api/api";
+import {axiosInstance} from "../../services/api/api";
 import { setCredentials, logout } from "../../store/slices/authSlice";
 
 const useAuthInit = () => {

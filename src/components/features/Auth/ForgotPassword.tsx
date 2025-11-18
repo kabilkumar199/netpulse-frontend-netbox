@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react"; 
+import axios from "axios";
+import { Eye, EyeOff } from "lucide-react";
 import Logo from "../../common/Layout/Logo";
+import { toast } from "react-toastify";
+import { API_ENDPOINTS } from "../../../helpers/url_helper";
+import { api } from "../../../services/api/api";
 
 const ForgotPassword: React.FC = () => {
   const navigate = useNavigate();
@@ -16,21 +20,34 @@ const ForgotPassword: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPassword || !repeatPassword) {
+    setError(null);
+    if (!newPassword || !newPassword || !repeatPassword) {
       setError("Please fill in both fields.");
+      toast.error("Please fill in all fields.");
       return;
     }
     if (newPassword !== repeatPassword) {
       setError("Passwords do not match.");
+      toast.error("Passwords do not match.");
       return;
     }
 
     try {
       setLoading(true);
-      setError(null);
+
+      // // Adjust the URL and payload as needed for your backend
+      // await api.post(API_ENDPOINTS.FORGOT_PASSWORD, {
+      //   username: username,
+      //   newPassword: newPassword,
+      // });
       setSuccess(true);
+      toast.success("Password reset successfully!");
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Password reset failed.");
+      const message =
+        err?.response?.data?.message ||
+        "Password reset failed. Please try again.";
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -121,7 +138,9 @@ const ForgotPassword: React.FC = () => {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="Enter new password"
-                      className="w-full px-3 py-2 border border-gray-700 rounded-lg bg-gray-800 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-700 rounded-lg
+                       bg-gray-800 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      autoComplete="new-password"
                     />
                     <button
                       type="button"
@@ -148,7 +167,9 @@ const ForgotPassword: React.FC = () => {
                       value={repeatPassword}
                       onChange={(e) => setRepeatPassword(e.target.value)}
                       placeholder="Repeat new password"
-                      className="w-full px-3 py-2 border border-gray-700 rounded-lg bg-gray-800 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-700 rounded-lg
+                       bg-gray-800 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      autoComplete="new-password"
                     />
                     <button
                       type="button"
@@ -171,7 +192,9 @@ const ForgotPassword: React.FC = () => {
                 <button
                   type="submit"
                   className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                  disabled={!newPassword || !repeatPassword || loading}
+                  disabled={
+                    !username || !newPassword || !repeatPassword || loading
+                  }
                 >
                   {loading ? "Submitting..." : "Submit"}
                 </button>

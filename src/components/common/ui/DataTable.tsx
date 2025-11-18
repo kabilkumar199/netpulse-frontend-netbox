@@ -43,6 +43,7 @@ export interface PaginationConfig {
   pageSizeOptions: number[];
   showQuickJumper: boolean;
   showTotal: boolean;
+  onChange?: (page: number, pageSize?: number) => void;
 }
 
 export interface DataTableProps<T> {
@@ -496,7 +497,7 @@ function DataTable<T extends Record<string, any>>({
         </div>
 
         {/* Pagination */}
-        {pagination.enabled && totalPages > 1 && (
+        {pagination.enabled && totalPages >= 1 && (
           <div className="px-6 py-4 border-t border-gray-700">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">

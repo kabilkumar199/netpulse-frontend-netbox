@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Edit, Trash2, Shield, Users } from "lucide-react";
-import api from "../../helpers/api/apiHelper";
+import { api } from "../../services/api/api";
 import { API_ENDPOINTS } from "../../helpers/url_helper";
 import { toast } from "react-toastify";
 

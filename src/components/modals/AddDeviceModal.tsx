@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { AlertCircle, CheckCircle } from "lucide-react";
 import { toast } from "react-toastify";
 import { Modal } from "../common/ui";
-import api from "../../helpers/api/apiHelper";
+import { api } from "../../services/api/api";
 import { API_ENDPOINTS } from "../../helpers/url_helper";
 import type {
   Device,
@@ -10,16 +10,22 @@ import type {
   AddDeviceFormData,
   AddDeviceFormErrors,
 } from "../../types";
+import { Eye, EyeOff } from "lucide-react";
 
-const AddDeviceModal: React.FC<AddDeviceModalProps> = ({ isOpen, onClose }) => {
+const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
+  isOpen,
+  onClose,
+  onSuccess,
+}) => {
   const [formData, setFormData] = useState<AddDeviceFormData>({
     ipAddress: "",
-    username: "admin@exaware.com",
+    username: "",
     password: "",
   });
 
   const [errors, setErrors] = useState<AddDeviceFormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const validateForm = (): boolean => {
     const newErrors: AddDeviceFormErrors = {};
@@ -100,9 +106,12 @@ const AddDeviceModal: React.FC<AddDeviceModalProps> = ({ isOpen, onClose }) => {
         // Reset form and close modal
         setFormData({
           ipAddress: "",
-          username: "admin@exaware.com",
+          username: "",
           password: "",
         });
+        if (onSuccess) {
+          onSuccess();
+        }
         onClose();
       }
     } catch (error: any) {
@@ -133,7 +142,7 @@ const AddDeviceModal: React.FC<AddDeviceModalProps> = ({ isOpen, onClose }) => {
     if (!isSubmitting) {
       setFormData({
         ipAddress: "",
-        username: "admin@exaware.com",
+        username: "",
         password: "",
       });
       setErrors({});
@@ -210,24 +219,37 @@ const AddDeviceModal: React.FC<AddDeviceModalProps> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Password Field */}
-        <div className="mb-6">
+        <div className="mb-6 relative">
           <label
             htmlFor="password"
             className="block text-sm font-medium text-gray-300 mb-1"
           >
             Password <span className="text-red-400">*</span>
           </label>
+
           <input
-            type="password"
+            type={showPassword ? "text" : "password"}
             id="password"
             name="password"
             value={formData.password}
             onChange={handleInputChange}
-            className={`w-full px-3 py-2 bg-gray-800 border rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-              errors.password ? "border-red-500" : "border-gray-600"
-            }`}
+            className={`w-full px-3 py-2 bg-gray-800 border rounded-md text-white
+      placeholder-gray-500 focus:outline-none focus:ring-2 
+      focus:ring-blue-500 focus:border-blue-500 pr-10
+      ${errors.password ? "border-red-500" : "border-gray-600"}
+    `}
             disabled={isSubmitting}
           />
+
+          {/* 🔥 Eye Icon */}
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-[38px] text-gray-400 hover:text-gray-200"
+          >
+            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
+
           {errors.password && (
             <p className="mt-1 text-sm text-red-400">{errors.password}</p>
           )}

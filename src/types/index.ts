@@ -33,7 +33,7 @@ export interface Credential {
   privPassword?: string; // SNMP v3
   engineId?: string; // SNMP v3
   context?: string; // SNMP v3
-  vlanContextPattern?: string; // SNMP v3 per-VLAN
+  vlanContextPattern?: string; 
   priority: number;
   isActive: boolean;
   scoping: CredentialScoping;
@@ -44,6 +44,7 @@ export interface Credential {
 export interface Device {
   id: string;
   hostname: string;
+  mac?: string;
   arangoId?: string;
   deviceId?: string;
   fqdn?: string;
@@ -51,7 +52,7 @@ export interface Device {
   vendor: string;
   model: string;
   os: string;
-  osVersion?: string; // OS version for display (can be same as os)
+  osVersion?: string; 
   snmpSysObjectId?: string;
   wmiClass?: string;
   cloudId?: string;
@@ -1156,6 +1157,7 @@ export interface DevicesApiResponse {
 export interface AddDeviceModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess: () => void;
 }
 
 export interface AddDeviceFormData {
@@ -1170,3 +1172,8 @@ export interface AddDeviceFormErrors {
   password?: string;
   general?: string;
 }
+export interface UserProfileProps {
+  onClose?: () => void;
+}
+
+

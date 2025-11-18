@@ -22,3 +22,15 @@ export const API_ENDPOINTS = {
   UPDATE_USER: "/user",
   DELETE_USER: "/user",
 };
+
+export const NETBOX_API_ENDPOINTS = {
+  // Authentication
+  LOGIN: "/api/auth/signin",
+  REFRESH_TOKEN: "/api/auth/refresh",
+  SIGNOUT: "/api/auth/signout",
+
+  // Devices
+  GET_DEVICES_URL: "/api/dcim/devices",
+  CREATE_DEVICE_URL: "/api/dcim/devices/",
+  DELETE_DEVICE_URL: "/api/dcim/devices", // Base URL, append /{id}/ for delete
+};

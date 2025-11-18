@@ -1,93 +1,127 @@
-import axios from 'axios';
-import type { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
-import { API_ENDPOINTS } from "../../helpers/url_helper";
+import axios from "axios";
+import type {
+  AxiosInstance,
+  InternalAxiosRequestConfig,
+  AxiosError,
+  AxiosRequestConfig,
+} from "axios";
+import { AxiosHeaders } from "axios";
 
-// Extend AxiosRequestConfig to include metadata
-declare module 'axios' {
+// --- Extend Axios metadata safely ---
+declare module "axios" {
   export interface InternalAxiosRequestConfig {
-    metadata?: {
-      startTime: Date;
-    };
+    metadata?: { startTime: Date };
+    _retry?: boolean;
   }
 }
 
-// Create axios instance
+// --- Create axios instance ---
 const axiosInstance: AxiosInstance = axios.create({
-  baseURL: `${import.meta.env.VITE_APP_API_URL}`,
+  baseURL: import.meta.env.VITE_APP_API_URL,
   timeout: 30000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { "Content-Type": "application/json" },
   withCredentials: false,
 });
 
-// Request interceptor
-axiosInstance.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('authToken');
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
+// --- Request interceptor ---
+axiosInstance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  const token = localStorage.getItem("authToken");
+
+  if (token) {
+    if (!config.headers) {
+      config.headers = new AxiosHeaders();
     }
-    config.metadata = { startTime: new Date() };
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+
+    (config.headers as AxiosHeaders).set("Authorization", `Bearer ${token}`);
   }
-);
-console.log(import.meta.env.VITE_APP_API_URL)
 
+  config.metadata = { startTime: new Date() };
+  return config;
+});
 
-// Response interceptor
+// --- Response interceptor ---
 axiosInstance.interceptors.response.use(
-  (response: AxiosResponse) => {
-    const endTime = new Date();
-    const startTime = response.config.metadata?.startTime;
-    if (startTime) {
-      const duration = endTime.getTime() - startTime.getTime();
-      console.log(`API Request Duration: ${duration}ms`);
+  (response) => {
+    if (response.config.metadata?.startTime) {
+      const duration =
+        Date.now() - response.config.metadata.startTime.getTime();
+      console.log(`API Duration: ${duration}ms`);
     }
-
     return response;
   },
-  async (error) => {
-    const originalRequest = error.config;
+
+  async (error: AxiosError) => {
+    const originalRequest = error.config as
+      | InternalAxiosRequestConfig
+      | undefined;
+
+    // ✔ Fix: ensure originalRequest exists
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      const refreshToken = localStorage.getItem('refreshToken');
 
-      if (refreshToken) {
-        try {
-          const refreshUrl = `${import.meta.env.VITE_API_BASE_URL}/api${API_ENDPOINTS.REFRESH_TOKEN}`;
-          const response = await axios.post(
-            refreshUrl,
-            { refreshToken }
-          );
+      const refreshToken = localStorage.getItem("refreshToken");
 
-          const { token } = response.data;
-          localStorage.setItem('authToken', token);
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return axiosInstance(originalRequest);
-        } catch (refreshError) {
+      if (!refreshToken) {
+        return Promise.reject(error);
+      }
 
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('refreshToken');
-          return Promise.reject(refreshError);
+      try {
+        const refreshUrl = `${
+          import.meta.env.VITE_API_BASE_URL
+        }/api/auth/refresh-token`;
+
+        const res = await axios.post(refreshUrl, { refreshToken });
+        const newToken = res.data.token;
+
+        localStorage.setItem("authToken", newToken);
+
+        if (!originalRequest.headers) {
+          originalRequest.headers = AxiosHeaders.from({});
         }
-      } else {
-        localStorage.removeItem('authToken');
+
+        (originalRequest.headers as any).set(
+          "Authorization",
+          `Bearer ${newToken}`
+        );
+
+        return axiosInstance(originalRequest);
+      } catch (refreshErr) {
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("refreshToken");
+        return Promise.reject(refreshErr);
       }
     }
-    const errorMessage = error.response?.data?.message || error.message || 'An error occurred';
-    console.error('API Error:', {
-      message: errorMessage,
-      status: error.response?.status,
-      url: error.config?.url,
-    });
 
     return Promise.reject(error);
   }
 );
 
-export default axiosInstance;
+// --- Typed API wrapper (NO MORE unknown errors) ---
+export const api = {
+  get: async <T>(url: string, config?: AxiosRequestConfig): Promise<T> =>
+    axiosInstance.get(url, config).then((res) => res.data as T),
+
+  post: async <T>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig
+  ): Promise<T> =>
+    axiosInstance.post(url, data, config).then((res) => res.data as T),
+
+  put: async <T>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig
+  ): Promise<T> =>
+    axiosInstance.put(url, data, config).then((res) => res.data as T),
+
+  delete: async <T>(url: string, config?: AxiosRequestConfig): Promise<T> =>
+    axiosInstance.delete(url, config).then((res) => res.data as T),
+};
+
+// ✔ No default export → correct usage
+export { axiosInstance };

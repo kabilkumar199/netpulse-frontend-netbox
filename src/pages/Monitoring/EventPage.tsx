@@ -1,17 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import type { FC } from "react";
 import axios from 'axios';
-import api from '../../services/api/api'; // Adjust path
+import { api } from "../../services/api/api";
 import { toast } from 'react-toastify';
 import ReusableTable from "../../components/common/ui/ReusableTable";
 import type { ColumnDef } from "../../components/common/ui/ReusableTable";
 import StatusBadge from "../../components/common/ui/StatusBadge";
 import { API_ENDPOINTS } from '../../helpers/url_helper';
-import { Eye, FileText, Calendar, Server, AlertCircle } from "lucide-react";      
-import { api8081 } from "../../helpers/api/apiHelper";
+import { Eye, FileText, Calendar, Server, AlertCircle } from "lucide-react";
 
-// --- TypeScript Interfaces ---
-// --- TypeScript Interfaces ---
 interface Log {
   id: string;
   deviceId: string | null;
@@ -31,6 +28,11 @@ interface ApiResponse {
   currentPage: number;
   logs: Log[];
   totalElements: number;
+}
+
+interface DeleteResponse {
+  message: string;
+  statusCode: number;
 }
 
 const ITEMS_PER_PAGE = 15;
@@ -70,27 +72,31 @@ const EventPage: FC = () => {
   const [selectedDetails, setSelectedDetails] = useState<Log | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
+  const [isClearing, setIsClearing] = useState<boolean>(false);
 
-   useEffect(() => {
-    const fetchEventData = async () => {
-      setLoading(true);
-      try {
-        const params = {
-          page: currentPage,
-          size: ITEMS_PER_PAGE,
-        };
-        // Use api.get, which handles auth
-        const response = await api.get<ApiResponse>("/events", { params });
-        setEventData(response.data);
-      } catch (error) {
-        console.error("Failed to fetch event data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchEventData();
+
+  // REPLACE it with this 'useCallback' version
+  const fetchEventData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = {
+        page: currentPage,
+        size: ITEMS_PER_PAGE,
+      };
+      const response = await api.get<ApiResponse>("/events", { params });
+      setEventData(response);
+    } catch (error) {
+      console.error("Failed to fetch event data:", error);
+    } finally {
+      setLoading(false);
+    }
   }, [currentPage]);
- 
+  useEffect(() => {
+    fetchEventData();
+  }, [fetchEventData]);
+
+
+
 
   const showDetails = (item: Log) => {
     setSelectedDetails(item);
@@ -108,8 +114,24 @@ const EventPage: FC = () => {
     }
   };
 
-  const handleClearAll = () => {
-    console.warn("Clear All functionality not implemented.");
+
+
+  const handleClearAll = async () => {
+    setIsClearing(true);
+    try {
+      const response = await api.delete<DeleteResponse>("/events");
+      console.log(response.message);
+      if (currentPage !== 0) {
+        setCurrentPage(0);
+      } else {
+        fetchEventData();
+      }
+
+    } catch (error) {
+      console.error("Failed to clear event logs:", error);
+    } finally {
+      setIsClearing(false);
+    }
   };
 
   // --- Tailwind Classes for Darker Theme ---
@@ -131,8 +153,9 @@ const EventPage: FC = () => {
             type="button"
             className={`${buttonBaseClasses} bg-red-600 hover:bg-red-700 focus:ring-red-500`}
             onClick={handleClearAll}
+            disabled={isClearing}
           >
-            Clear All
+            {isClearing ? "Clearing..." : "Clear All"}
           </button>
         </div>
 
@@ -161,11 +184,10 @@ const EventPage: FC = () => {
           <div className="flex justify-end items-center flex-wrap gap-3 px-4 py-3 bg-slate-800 border-t border-slate-700">
             <button
               type="button"
-              className={`${buttonBaseClasses} ${
-                !eventData?.hasPrevious
-                  ? buttonDisabledClasses
-                  : buttonEnabledClasses
-              }`}
+              className={`${buttonBaseClasses} ${!eventData?.hasPrevious
+                ? buttonDisabledClasses
+                : buttonEnabledClasses
+                }`}
               disabled={!eventData?.hasPrevious}
               onClick={() => handlePageChange(currentPage - 1)}
             >
@@ -177,9 +199,8 @@ const EventPage: FC = () => {
             </span>
             <button
               type="button"
-              className={`${buttonBaseClasses} ${
-                !eventData?.hasNext ? buttonDisabledClasses : buttonEnabledClasses
-              }`}
+              className={`${buttonBaseClasses} ${!eventData?.hasNext ? buttonDisabledClasses : buttonEnabledClasses
+                }`}
               disabled={!eventData?.hasNext}
               onClick={() => handlePageChange(currentPage + 1)}
             >
@@ -251,8 +272,8 @@ const EventPage: FC = () => {
                               ? JSON.stringify(value, null, 2)
                               : key.toLowerCase().includes("date") ||
                                 key.toLowerCase().includes("time")
-                              ? new Date(value).toLocaleString()
-                              : value?.toString()}
+                                ? new Date(value).toLocaleString()
+                                : value?.toString()}
                           </td>
                         </tr>
                       ))}

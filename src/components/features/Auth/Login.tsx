@@ -8,13 +8,26 @@ import {
 import { useNavigate } from "react-router-dom";
 import { Button, Input, Card } from "../../common/ui";
 import Logo from "../../common/Layout/Logo";
-import axiosInstance from "../../../services/api/api";
+import { api } from "../../../services/api/api";
 import type { RootState } from "../../../store/store";
 import { toast } from "react-toastify";
-import { Formik, Form, Field } from 'formik';
-import { validationSchemas } from '../../../utils/validation';
+import { Formik, Form, Field } from "formik";
+import { validationSchemas } from "../../../utils/validation";
 import FormikInput from "../../../utils/FormikInput";
 import { API_ENDPOINTS } from "../../../helpers/url_helper";
+
+interface LoginResponse {
+  token: string;
+  refreshToken: string;
+  firstname?: string;
+  lastname?: string;
+  userId: string;
+  username: string;
+  email: string;
+  name?: string;
+  fullName?: string;
+  roles?: string[];
+}
 
 const Login: React.FC = () => {
   const dispatch = useDispatch();
@@ -23,9 +36,9 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   const initialValues = {
-    username: localStorage.getItem('rememberedUser') || '',
-    password: '',
-    rememberMe: !!localStorage.getItem('rememberedUser'),
+    username: localStorage.getItem("rememberedUser") || "",
+    password: "",
+    rememberMe: !!localStorage.getItem("rememberedUser"),
   };
 
   const handleFormikSubmit = async (
@@ -36,49 +49,61 @@ const Login: React.FC = () => {
     dispatch(setError(null));
     setStatus(null);
 
-
     try {
-      const resp = await axiosInstance.post(API_ENDPOINTS.LOGIN, {
+      const respData = await api.post<LoginResponse>(API_ENDPOINTS.LOGIN, {
         username: values.username,
         password: values.password,
       });
 
       if (values.rememberMe) {
-        localStorage.setItem('rememberedUser', values.username);
+        localStorage.setItem("rememberedUser", values.username);
       } else {
-        localStorage.removeItem('rememberedUser');
+        localStorage.removeItem("rememberedUser");
       }
-      const respData = resp.data;
+
       localStorage.setItem("authToken", respData.token);
       localStorage.setItem("refreshToken", respData.refreshToken);
+
       const userObjectToStore = {
-        id: respData.id,
+        firstname: respData.firstname,
+        lastname: respData.lastname,
+        id: respData.userId,
         username: respData.username,
         email: respData.email,
-        name: respData.name || respData.fullName || respData.username || '',
-        role: respData.roles?.[0] || 'user'
+        name: respData.name || respData.fullName || respData.username || "",
+        role: respData.roles?.[0] || "user",
       };
-      
-      localStorage.setItem('user', JSON.stringify(userObjectToStore));
-        dispatch(
+
+      localStorage.setItem("user", JSON.stringify(userObjectToStore));
+
+      dispatch(
         setCredentials({
           user: userObjectToStore,
           token: respData.token,
           refreshToken: respData.refreshToken,
         })
       );
-
-      toast.success("Login successful!");
+      const whoLoggedIn =
+        userObjectToStore.name ||
+        userObjectToStore.username ||
+        userObjectToStore.role;
+      toast.success(`Login successful for" ${whoLoggedIn}`);
       navigate("/dashboard");
     } catch (err: any) {
       console.error("Login error:", err);
-      const message =
-        err?.response?.data?.message ||
-        "Login failed. Please check your credentials.";
+      let message = err?.response?.data?.message;
+      if (
+        err?.response?.status === 401 ||
+        (message &&
+          (message.includes("LDAP") || message.includes("INVALID_CREDENTIALS")))
+      ) {
+        message = "Invalid username or password.";
+      } else {
+        message = message || "Login failed. Please check your credentials.";
+      }
+
       dispatch(setError(message));
       setStatus(message);
-      toast.error(message);
-
     } finally {
       dispatch(setLoading(false));
       setSubmitting(false);
@@ -143,7 +168,7 @@ const Login: React.FC = () => {
                   <Form className="space-y-5">
                     <FormikInput
                       name="username"
-                      label="Username "
+                      label="Username"
                       type="text"
                       placeholder="user name"
                     />
@@ -160,14 +185,40 @@ const Login: React.FC = () => {
                         >
                           {showPassword ? (
                             // Eye-Off Icon
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-1.29-1.29m-2.637-2.637L4.5 5.25A9.95 9.95 0 0112 4.5c4.478 0 8.268 2.943 9.543 7a9.97 9.97 0 01-1.563 3.029m-5.858-.908l-4.242-4.242" />
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={2}
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-1.29-1.29m-2.637-2.637L4.5 5.25A9.95 9.95 0 0112 4.5c4.478 0 8.268 2.943 9.543 7a9.97 9.97 0 01-1.563 3.029m-5.858-.908l-4.242-4.242"
+                              />
                             </svg>
                           ) : (
                             // Eye Icon
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.057 9.542 6.042C19.732 16.057 15.523 19 12 19c-4.478 0-8.268-2.943-9.542-6.958z" />
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={2}
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                              />
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.057 9.542 6.042C19.732 16.057 15.523 19 12 19c-4.478 0-8.268-2.943-9.542-6.958z"
+                              />
                             </svg>
                           )}
                         </button>

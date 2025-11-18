@@ -17,7 +17,7 @@ import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../../../store/store";
 import { logout, setUser } from "../../../store/slices/authSlice";
-import axiosInstance from "../../../services/api/api";
+import {api} from "../../../services/api/api";
 import { API_ENDPOINTS } from "../../../helpers/url_helper";
 
 interface HeaderProps {
@@ -55,7 +55,7 @@ const Header: React.FC<HeaderProps> = ({
     const refreshToken = localStorage.getItem("refreshToken");
 
     try {
-      await axiosInstance.post(API_ENDPOINTS.SIGNOUT, { refreshToken });
+      await api.post(API_ENDPOINTS.SIGNOUT, { refreshToken });
       toast.success("Logged out successfully!");
     } catch (err: any) {
       console.error("Logout API failed:", err);

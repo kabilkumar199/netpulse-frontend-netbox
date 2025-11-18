@@ -1,39 +1,27 @@
 import React, { useState } from "react";
 import {
-  User,Mail,Phone,MapPin,Calendar,Shield,Settings,Key,Bell,Globe,Camera,Edit,Save,X,
+  User, Mail, Phone, MapPin, Calendar, Shield, Settings, Key, Bell, Globe, Camera, Edit, Save, X,
 } from "lucide-react";
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import type { FormikHelpers } from 'formik';
 import { validationSchemas } from "../../utils";
 import { toast } from "react-toastify";
 import { API_ENDPOINTS } from '../../helpers/url_helper';
-import axiosInstance from "../../services/api/api";
-import api from "../../services/api/api";
+import {api} from "../../services/api/api";
 import axios from "axios";
-import type { RootState } from "../../store/store"; 
+import type { RootState } from "../../store/store";
+import type {
+  UserProfileProps,
+} from "../../types";
 
-interface UserProfileProps {
-  onClose?: () => void;
-}
 type PasswordFormValues = {
   currentPassword: string;
   newPassword: string;
   confirmPassword: string;
 };
 
-const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [activeTab, setActiveTab] = useState("profile");
-  // const { isLoading, error, user } = useSelector((state: RootState) => state.auth);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [visibility, setVisibility] = useState({
-    current: false,
-    new: false,
-    confirm: false,
-  });
-
-
-  const [profile, setProfile] = useState({
+function getInitialProfile() {
+  const defaultProfile = {
     firstName: "John",
     lastName: "Carter",
     email: "john.carter@company.com",
@@ -41,7 +29,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
     department: "IT",
     role: "Super Admin",
     location: "San Francisco, CA",
-    bio: "Network Administrator with 10+ years of experience in enterprise network management.",
+    bio: "Network Administrator with 10+ years of experience...",
     avatar: null as string | null,
     joinedDate: "January 15, 2024",
     lastLogin: "Today at 10:30 AM",
@@ -57,12 +45,97 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
       lastPasswordChange: "December 1, 2023",
       loginAttempts: 0,
     },
-  });
+  };
 
+  const userString = localStorage.getItem("user");
+
+  if (userString) {
+    try {
+      const loggedInUser = JSON.parse(userString);
+      return {
+        ...defaultProfile, 
+        firstName: loggedInUser.name || defaultProfile.firstName,
+        lastName: "", 
+        email: loggedInUser.email || defaultProfile.email,
+        role: loggedInUser.role || defaultProfile.role,
+        department: loggedInUser.department || defaultProfile.department,
+      };
+
+    } catch (error) {
+      console.error("Failed to parse user from local storage", error);
+      return defaultProfile; 
+    }
+  }
+
+  return defaultProfile; 
+}
+
+const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [activeTab, setActiveTab] = useState("profile");
+
+  // const { isLoading, error, user } = useSelector((state: RootState) => state.auth);
+  const [profile, setProfile] = useState(getInitialProfile);
   const [editProfile, setEditProfile] = useState(profile);
-  const handleSave = () => {
-    setProfile(editProfile);
-    setIsEditing(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [visibility, setVisibility] = useState({
+    current: false,
+    new: false,
+    confirm: false,
+  });
+  const handleSave = async () => {
+    setIsSaving(true); 
+    const userString = localStorage.getItem('user');
+    if (!userString) {
+      toast.error("User not found. Please log in again.");
+      setIsSaving(false);
+      return;
+    }
+    const currentUser = JSON.parse(userString);
+    const userId = currentUser.id;
+
+    if (!userId) {
+      toast.error("User ID is missing. Please log in again.");
+      setIsSaving(false);
+      return;
+    }
+    const combinedName = [editProfile.firstName, editProfile.lastName]
+      .filter(Boolean)
+      .join(' ');
+    const payload = {
+      userId: userId, 
+      name: combinedName,
+      email: editProfile.email,
+      phone: editProfile.phone,
+      department: editProfile.department,
+      location: editProfile.location,
+      bio: editProfile.bio,
+    };
+
+    try {
+      await api.put(API_ENDPOINTS.UPDATE_USER, payload);
+      toast.success('🎉 Profile updated successfully!');
+      const updatedUserForStorage = {
+        ...currentUser, 
+        ...payload,     
+        role: currentUser.role, 
+        username: currentUser.username 
+      };
+            localStorage.setItem('user', JSON.stringify(updatedUserForStorage));
+      setProfile(editProfile); 
+      setIsEditing(false);
+
+    } catch (error) {
+      let message = 'Failed to update profile.';
+      if (axios.isAxiosError(error)) {
+        message = error.response?.data?.message || error.message;
+      }
+      console.error('Error updating profile:', message);
+      toast.error(message);
+    } finally {
+      setIsSaving(false); 
+    }
   };
 
   const handleCancel = () => {
@@ -108,7 +181,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
     }
     const loggedInUser = JSON.parse(userString);
     console.log(loggedInUser);
-    
+
     if (!loggedInUser.id) {
       toast.error('Error: User ID is missing.');
       setSubmitting(false);
@@ -118,7 +191,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
       userId: loggedInUser.id,
       newPassword: values.newPassword,
     };
-console.log("4. Sending this payload to PUT /user:", payload); 
+    console.log("4. Sending this payload to PUT /user:", payload);
     try {
       await api.put(API_ENDPOINTS.UPDATE_USER, payload);
       toast.success('🎉 Password changed successfully!');
@@ -238,13 +311,22 @@ console.log("4. Sending this payload to PUT /user:", payload);
                         >
                           Cancel
                         </button>
-                        <button
-                          onClick={handleSave}
-                          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center space-x-2"
-                        >
-                          <Save className="w-4 h-4" />
-                          <span>Save Changes</span>
-                        </button>
+                       <button
+                     onClick={handleSave}
+                     disabled={isSaving} // ✅ Disable when saving
+                     className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-wait"
+                   >
+                     {isSaving ? (
+                       // ✅ Show a simple spinner (you can replace this)
+                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                     ) : (
+                       // ✅ Show the Save icon
+                       <Save className="w-4 h-4" />
+                     )}
+                     <span>
+                       {isSaving ? "Saving..." : "Save Changes"}
+                     </span>
+                   </button>
                       </div>
                     )}
                   </div>

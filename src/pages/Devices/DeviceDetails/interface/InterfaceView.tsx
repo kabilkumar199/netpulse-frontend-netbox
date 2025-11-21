@@ -1,7 +1,7 @@
-import { useState } from 'react';
- import InterfaceGrid from './InterfaceGrid';
-import InterfaceTable from './InterfaceTable';
-import type { InterfaceResponse } from '../../../../types/interface';
+import { useState } from "react";
+import InterfaceGrid from "./InterfaceGrid";
+import InterfaceTable from "./InterfaceTable";
+import type { InterfaceResponse } from "../../../../types/interface";
 
 interface InterfaceViewProps {
   data?: InterfaceResponse;
@@ -9,11 +9,11 @@ interface InterfaceViewProps {
 }
 
 export default function InterfaceView({ data, onRefresh }: InterfaceViewProps) {
-  const [activeTab, setActiveTab] = useState<string>('IP');
+  const [activeTab, setActiveTab] = useState<string>("IP");
 
   const interfaces = data?.InterfaceIp || [];
 
-  const tabs = ['IP', 'Management', 'Loopback', 'Routing', 'System'];
+  const tabs = ["IP", "Management", "Loopback", "Routing", "System"];
 
   const handleRefresh = () => {
     if (onRefresh) {
@@ -23,7 +23,7 @@ export default function InterfaceView({ data, onRefresh }: InterfaceViewProps) {
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="  mx-auto space-y-2">
         {/* Interface Grid Section */}
         <InterfaceGrid interfaces={interfaces} onRefresh={handleRefresh} />
 
@@ -36,8 +36,8 @@ export default function InterfaceView({ data, onRefresh }: InterfaceViewProps) {
                 onClick={() => setActiveTab(tab)}
                 className={`px-4 py-2 text-sm font-medium transition-colors ${
                   activeTab === tab
-                    ? 'text-blue-400 border-b-2 border-blue-400'
-                    : 'text-gray-400 hover:text-white'
+                    ? "text-blue-400 border-b-2 border-blue-400"
+                    : "text-gray-400 hover:text-white"
                 }`}
               >
                 {tab}
@@ -51,4 +51,3 @@ export default function InterfaceView({ data, onRefresh }: InterfaceViewProps) {
     </div>
   );
 }
-

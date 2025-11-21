@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import type { Device } from "../../../types";
 import { Cpu, Zap, Thermometer, Wind } from "lucide-react";
 import { API_ENDPOINTS } from "../../../helpers/url_helper"; 
-import api from "../../../helpers/api/apiHelper"; 
-
+import { api } from "../../../services/api/api";
+ 
 interface PeripheralsTabProps {
   device: Device;
 }

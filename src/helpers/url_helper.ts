@@ -21,6 +21,10 @@ export const API_ENDPOINTS = {
   CREATE_USER: "/api/auth/signup",
   UPDATE_USER: "/user",
   DELETE_USER: "/user",
+  
+  // VPLS
+  GET_VPLS_ALL_DATA: "/device/vpls/all",
+  GET_DHCP_SNOOPING_RESTORE: "/device/vpls/dhcp-snooping/restore",
 };
 
 export const NETBOX_API_ENDPOINTS = {

@@ -1,13 +1,10 @@
 import React from "react";
-import { useSelector } from "react-redux";
 import { Navigate, Outlet } from "react-router-dom";
-import type { RootState } from "../../../store/store";
+import { useAuthStore } from "../../../store/authStore";
 import { ROUTES } from "../../../router/routes";
 
 export const ProtectedRoute: React.FC = () => {
-  const { token, isAuthenticated } = useSelector(
-    (state: RootState) => state.auth
-  );
+  const { token, isAuthenticated } = useAuthStore();
 
   // Check if user is authenticated
   if (!token || !isAuthenticated) {
@@ -18,9 +15,7 @@ export const ProtectedRoute: React.FC = () => {
 };
 
 export const PublicRoute: React.FC = () => {
-  const { token, isAuthenticated } = useSelector(
-    (state: RootState) => state.auth
-  );
+  const { token, isAuthenticated } = useAuthStore();
 
   // If user is already authenticated, redirect to dashboard
   if (token && isAuthenticated) {

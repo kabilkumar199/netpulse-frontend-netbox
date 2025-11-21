@@ -1,15 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import {
-  setCredentials,
-  setLoading,
-  setError,
-} from "../../../store/slices/authSlice";
+import { useAuthStore } from "../../../store/authStore";
 import { useNavigate } from "react-router-dom";
 import { Button, Input, Card } from "../../common/ui";
 import Logo from "../../common/Layout/Logo";
 import { api } from "../../../services/api/api";
-import type { RootState } from "../../../store/store";
 import { toast } from "react-toastify";
 import { Formik, Form, Field } from "formik";
 import { validationSchemas } from "../../../utils/validation";
@@ -30,9 +24,8 @@ interface LoginResponse {
 }
 
 const Login: React.FC = () => {
-  const dispatch = useDispatch();
+  const { isLoading, error, setCredentials, setLoading, setError } = useAuthStore();
   const navigate = useNavigate();
-  const { isLoading, error } = useSelector((state: RootState) => state.auth);
   const [showPassword, setShowPassword] = useState(false);
 
   const initialValues = {
@@ -45,8 +38,8 @@ const Login: React.FC = () => {
     values: typeof initialValues,
     { setSubmitting, setStatus }: any
   ) => {
-    dispatch(setLoading(true));
-    dispatch(setError(null));
+    setLoading(true);
+    setError(null);
     setStatus(null);
 
     try {
@@ -61,9 +54,6 @@ const Login: React.FC = () => {
         localStorage.removeItem("rememberedUser");
       }
 
-      localStorage.setItem("authToken", respData.token);
-      localStorage.setItem("refreshToken", respData.refreshToken);
-
       const userObjectToStore = {
         firstname: respData.firstname,
         lastname: respData.lastname,
@@ -74,15 +64,11 @@ const Login: React.FC = () => {
         role: respData.roles?.[0] || "user",
       };
 
-      localStorage.setItem("user", JSON.stringify(userObjectToStore));
-
-      dispatch(
-        setCredentials({
-          user: userObjectToStore,
-          token: respData.token,
-          refreshToken: respData.refreshToken,
-        })
-      );
+      setCredentials({
+        user: userObjectToStore,
+        token: respData.token,
+        refreshToken: respData.refreshToken,
+      });
       const whoLoggedIn =
         userObjectToStore.name ||
         userObjectToStore.username ||
@@ -102,10 +88,10 @@ const Login: React.FC = () => {
         message = message || "Login failed. Please check your credentials.";
       }
 
-      dispatch(setError(message));
+      setError(message);
       setStatus(message);
     } finally {
-      dispatch(setLoading(false));
+      setLoading(false);
       setSubmitting(false);
     }
   };

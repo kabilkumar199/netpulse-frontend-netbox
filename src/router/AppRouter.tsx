@@ -49,8 +49,10 @@ import Locations from "../pages/Organization/Locations";
 import ManufacturersPage from "../pages/Organization/Manufacturers";
 import RacksPage from "../pages/Organization/RacksPage";
 import DeviceRolesPage from "../pages/Organization/DeviceRolesPage";
+import DeviceTypesPage from "../pages/Organization/DeviceTypesPage";
 import ForgotPassword from "../components/features/Auth/ForgotPassword";
 import EventPage from "../pages/Monitoring/EventPage";
+import DeviceDetails from "../pages/Devices/DeviceDetails";
 
 const AppRouter: React.FC = () => {
   return (
@@ -74,7 +76,7 @@ const AppRouter: React.FC = () => {
             <Route path="topology" element={<TopologyPage />} />
 
             {/* Direct Component Access Routes (for modals/overlays) */}
-            {/* <Route path="device/:id" element={<DeviceDetails />} /> */}
+            <Route path="device/:id" element={<DeviceDetails />} />
             <Route path="discovery/wizard" element={<DiscoveryWizard />} />
             <Route path="discovery/netbox" element={<NetBoxImporter />} />
             <Route
@@ -143,6 +145,10 @@ const AppRouter: React.FC = () => {
             <Route
               path="organization/device-roles"
               element={<DeviceRolesPage />}
+            />
+            <Route
+              path="organization/device-types"
+              element={<DeviceTypesPage />}
             />
 
             {/* Catch all route */}

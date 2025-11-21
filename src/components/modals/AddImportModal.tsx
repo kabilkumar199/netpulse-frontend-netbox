@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { X, AlertCircle, CheckCircle } from "lucide-react";
-import { useAppDispatch } from "../../store/hooks";
-import { addDevice } from "../../store/slices/devicesSlice";
-import { useCreateDeviceMutation } from "../../helpers/api/devicesApiHelper";
+import { useDevicesStore } from "../../store/devicesStore";
+import { api } from "../../services/api/api";
+import { API_ENDPOINTS } from "../../helpers/url_helper";
 
 
 interface AddImportModalProps {
@@ -20,8 +20,8 @@ interface FormErrors {
 }
 
 const AddImportModal: React.FC<AddImportModalProps> = ({ isOpen, onClose }) => {
-  const dispatch = useAppDispatch();
-  const [createDevice, { isLoading }] = useCreateDeviceMutation();
+  const { addDevice, loading } = useDevicesStore();
+  const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState<FormData>({
     deviceFile: null,
@@ -72,11 +72,22 @@ const AddImportModal: React.FC<AddImportModalProps> = ({ isOpen, onClose }) => {
         updatedAt: new Date(),
       };
 
-      // Use RTK Query mutation
-      const result = await createDevice(deviceData).unwrap();
+      // Create device via API
+      setIsLoading(true);
+      const result = await api.post<any>(API_ENDPOINTS.GET_DEVICES_URL, deviceData);
 
-      // Also update local state
-      dispatch(addDevice(result));
+      // Also update local state (convert to Device format if needed)
+      if (result) {
+        const devicePayload: Partial<import("../../store/devicesStore").Device> = {
+          id: result.id || String(Date.now()),
+          hostname: result.hostname || "Unknown",
+          vendor: result.vendor,
+          model: result.model,
+          ...result,
+        };
+        await addDevice(devicePayload);
+      }
+      setIsLoading(false);
 
       // Reset form and close modal
       setFormData({

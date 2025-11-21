@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Device } from "../../../types";
-import api from "../../../helpers/api/apiHelper";
-import { API_ENDPOINTS } from "../../../helpers/url_helper";
+ import { API_ENDPOINTS } from "../../../helpers/url_helper";
 import {
   Server,
   MapPin,
@@ -18,6 +17,7 @@ import {
   TrendingUp,
   Circle,
 } from "lucide-react";
+import { api } from "../../../services/api/api";
 
 interface OverviewTabProps {
   device: Device;

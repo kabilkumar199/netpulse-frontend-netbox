@@ -11,23 +11,15 @@ import {
   XCircle,
   HelpCircle,
   Cpu,
-  PieChart as PieChartIcon,
 } from "lucide-react";
-import {api} from "../../services/api/api";
+import { toast } from "react-toastify";
 import StatsCard from "../../components/charts/StatsCard";
 import DonutStatsCard from "./DonutStatsCard";
 import LatestAlerts from "./LatestAlerts";
 import QuickActions from "../../components/shared/QuickActions";
-import { API_ENDPOINTS } from "../../helpers/url_helper";
-import type { Device, DevicesApiResponse } from "../../types";
+import { getDashboardStats, getDashboardDevices } from "../../services/netboxDashboardService";
+import type { NetBoxDevice } from "../../types/netbox";
 
-interface ApiAlert {
-  ack: string;
-  Severity: string;
-  Description: string;
-  Timestamp: string;
-  deviceId: string;
-}
 interface Alert {
   id: string;
   severity: "critical" | "warning" | "info";
@@ -36,115 +28,130 @@ interface Alert {
   deviceId: string;
   link: string;
 }
-const Dashboard: React.FC = () => {
-  const [deviceData, setDeviceData] = useState<{
-    devices: Device[];
-    error: string | null;
-  }>({ devices: [], error: null });
-  const [alertData, setAlertData] = useState<{
-    alerts: Alert[];
-    error: string | null;
-  }>({ alerts: [], error: null });
-  const [isLoading, setIsLoading] = useState(true);
 
-  const processAlerts = (rawAlerts: ApiAlert[]): Alert[] => {
-    return rawAlerts.slice(0, 10).map((alert, index) => {
-      let severity: Alert["severity"] = "info";
-      const apiSeverity = alert.Severity.toLowerCase();
-      if (apiSeverity === "critical") severity = "critical";
-      else if (apiSeverity === "major" || apiSeverity === "warning")
-        severity = "warning";
-      return {
-        id: `${alert.deviceId}-${alert.Timestamp}-${index}`,
-        severity: severity,
-        description: alert.Description,
-        timestamp: new Date(alert.Timestamp).toLocaleTimeString(),
-        deviceId: alert.deviceId,
-        link: `/devices/${alert.deviceId}/alarms`,
-      };
-    });
+// Dynamic color palette for platforms
+const platformColorPalette = [
+  "#3b82f6", // Blue
+  "#10b981", // Green
+  "#f59e0b", // Amber
+  "#ef4444", // Red
+  "#8b5cf6", // Purple
+  "#06b6d4", // Cyan
+  "#ec4899", // Pink
+  "#84cc16", // Lime
+  "#f97316", // Orange
+  "#6366f1", // Indigo
+  "#14b8a6", // Teal
+  "#a855f7", // Violet
+  "#22d3ee", // Sky
+  "#f43f5e", // Rose
+  "#eab308", // Yellow (replaced Slate gray)
+];
+
+// Function to generate consistent color for a platform name
+const getPlatformColor = (platformName: string): string => {
+  // Normalize platform name (lowercase, trim)
+  const normalized = platformName.toLowerCase().trim();
+
+  // Special cases for known platforms
+  const specialColors: { [key: string]: string } = {
+    unknown: "#8b5cf6", // Purple for Unknown
+    other: "#a855f7", // Violet for Other
+    exaware: "#3b82f6", // Blue for Exaware
+    cisco: "#1ba1e2", // Cisco blue
+    juniper: "#84a4c1", // Juniper blue
+    arista: "#e31937", // Arista red
+    hp: "#0096d6", // HP blue
+    "hp-enterprise": "#0096d6",
+    dell: "#007db8", // Dell blue
+    "dell-emc": "#007db8",
+    fortinet: "#ee3124", // Fortinet red
+    paloalto: "#ef4444", // Palo Alto red
+    checkpoint: "#0084d1", // Check Point blue
+    mikrotik: "#2c3e50", // MikroTik dark blue
+    ubiquiti: "#055da8", // Ubiquiti blue
+    netgear: "#6d9e3f", // Netgear green
+    "tp-link": "#0066cc", // TP-Link blue
   };
+
+  // Return special color if exists
+  if (specialColors[normalized]) {
+    return specialColors[normalized];
+  }
+
+  // Generate hash from platform name for consistent color assignment
+  let hash = 0;
+  for (let i = 0; i < platformName.length; i++) {
+    hash = platformName.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  // Use hash to select color from palette
+  const colorIndex = Math.abs(hash) % platformColorPalette.length;
+  return platformColorPalette[colorIndex];
+};
+
+const Dashboard: React.FC = () => {
+  const [devices, setDevices] = useState<NetBoxDevice[]>([]);
+  const [stats, setStats] = useState<{
+    totalDevices: number;
+    onlineDevices: number;
+    totalSites: number;
+    activeSites: number;
+    totalLinks: number;
+    connectedLinks: number;
+    deviceStatusData: { up: number; down: number; warning: number; unknown: number };
+    osDistributionData: { [key: string]: number };
+  } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       setIsLoading(true);
-      setDeviceData({ devices: [], error: null });
-      setAlertData({ alerts: [], error: null });
+      setError(null);
 
-      const [deviceResult, alertResult] = await Promise.allSettled([
-        api.get<DevicesApiResponse>(API_ENDPOINTS.GET_DEVICES_URL),
-        api.get<ApiAlert[]>(API_ENDPOINTS.GET_ALERTS_URL),
+      try {
+        const [dashboardStats, dashboardDevices] = await Promise.all([
+          getDashboardStats(),
+          getDashboardDevices(),
       ]);
 
-      if (
-        deviceResult.status === "fulfilled" &&
-        deviceResult.value &&
-        Array.isArray(deviceResult.value.devices)
-      ) {
-        setDeviceData({ devices: deviceResult.value.devices, error: null });
-      } else {
-        setDeviceData({ devices: [], error: "Failed to load" });
-      }
-
-      if (
-        alertResult.status === "fulfilled" &&
-        alertResult.value &&
-        Array.isArray(alertResult.value)
-      ) {
-        setAlertData({ alerts: processAlerts(alertResult.value), error: null });
-      } else {
-        setAlertData({ alerts: [], error: "Failed to load" });
-      }
-
+        setStats({
+          totalDevices: dashboardStats.totalDevices,
+          onlineDevices: dashboardStats.onlineDevices,
+          totalSites: dashboardStats.totalSites,
+          activeSites: dashboardStats.activeSites,
+          totalLinks: dashboardStats.totalLinks,
+          connectedLinks: dashboardStats.connectedLinks,
+          deviceStatusData: dashboardStats.deviceStatusData,
+          osDistributionData: dashboardStats.osDistributionData,
+        });
+        setDevices(dashboardDevices);
+        // For now, set empty alerts - can be extended later with NetBox alerts/events
+        setAlerts([]);
+      } catch (err: any) {
+        console.error("Error fetching dashboard data:", err);
+        setError(err?.message || "Failed to load dashboard data");
+        toast.error(err?.message || "Failed to load dashboard data");
+      } finally {
       setIsLoading(false);
+      }
     };
+
     fetchDashboardData();
   }, []);
 
-  const devices = deviceData.devices;
-  const alerts = alertData.alerts;
-  const totalDevices = devices.length;
-
-  const deviceStatusData = useMemo(() => {
-    const counts = { up: 0, down: 0, warning: 0, unknown: 0 };
-    devices.forEach((device) => {
-      const status = (device.status || "unknown").toLowerCase();
-      if (status === "reachable") counts.up += 1;
-      else if (status === "unreachable") counts.down += 1;
-      else counts.unknown += 1;
-    });
-    return counts;
-  }, [devices]);
-
-  const osDistributionData = useMemo(() => {
-    const TOP_N = 3;
-    const counts = devices.reduce((acc, device) => {
-      const os = String(device.osVersion ?? "Unknown");
-      acc[os] = (acc[os] || 0) + 1;
-      return acc;
-    }, {} as { [key: string]: number });
-
-    const sortedEntries = Object.entries(counts).sort(([, a], [, b]) => b - a);
-    const finalData: { [key: string]: number } = {};
-    let otherCount = 0;
-
-    sortedEntries.forEach((entry, index) => {
-      if (index < TOP_N) finalData[entry[0]] = entry[1];
-      else otherCount += entry[1];
-    });
-    if (otherCount > 0) finalData["Other"] = otherCount;
-    return finalData;
-  }, [devices]);
-
-  const criticalAlerts = useMemo(() => {
-    return alerts.filter((a) => a.severity === "critical").length;
-  }, [alerts]);
+  const totalDevices = stats?.totalDevices || 0;
+  const deviceStatusData = stats?.deviceStatusData || { up: 0, down: 0, warning: 0, unknown: 0 };
+  const osDistributionData = stats?.osDistributionData || {};
+  const criticalAlerts = 0; // Can be extended with NetBox events/alerts later
 
   const deviceStatusColors = {
     up: "#22c55e",
     down: "#ef4444",
     warning: "#f97316",
-    unknown: "#6b7280",
+    unknown: "#8b5cf6", // Purple instead of gray
   };
   const deviceStatusIcons = {
     up: CheckCircle,
@@ -152,11 +159,16 @@ const Dashboard: React.FC = () => {
     warning: AlertTriangle,
     unknown: HelpCircle,
   };
-  const osDistributionColors = {
-    exaware: "#3b82f6",
-    Unknown: "#6b7280",
-    Other: "#a855f7",
-  };
+
+  // Generate colors object dynamically from osDistributionData
+  const osDistributionColors = useMemo(() => {
+    const colors: { [key: string]: string } = {};
+    Object.keys(osDistributionData).forEach((platform) => {
+      colors[platform] = getPlatformColor(platform);
+    });
+    return colors;
+  }, [osDistributionData]);
+
   const osDistributionIcons = {
     exaware: Cpu,
     Unknown: HelpCircle,
@@ -180,7 +192,7 @@ const Dashboard: React.FC = () => {
           color="blue"
           subtitle="Across all sites"
           isLoading={isLoading}
-          error={deviceData.error}
+          error={error}
         />
         <StatsCard
           title="Online Devices"
@@ -195,21 +207,25 @@ const Dashboard: React.FC = () => {
               : "0% uptime"
           }
           isLoading={isLoading}
-          error={deviceData.error}
+          error={error}
         />
         <StatsCard
           title="Sites"
-          value={0}
+          value={stats?.totalSites || 0}
           icon={Building2}
           color="purple"
-          subtitle="Active locations"
+          subtitle={`${stats?.activeSites || 0} active locations`}
+          isLoading={isLoading}
+          error={error}
         />
         <StatsCard
           title="Network Links"
-          value={0}
+          value={stats?.totalLinks || 0}
           icon={Link2}
           color="indigo"
-          subtitle="Discovered connections"
+          subtitle={`${stats?.connectedLinks || 0} connected`}
+          isLoading={isLoading}
+          error={error}
         />
       </div>
 
@@ -220,20 +236,20 @@ const Dashboard: React.FC = () => {
           colors={deviceStatusColors}
           icons={deviceStatusIcons}
           isLoading={isLoading}
-          error={deviceData.error}
+          error={error}
         />
         <DonutStatsCard
-          title="OS Distribution"
+          title="Platform Distribution"
           data={osDistributionData}
           colors={osDistributionColors}
           icons={osDistributionIcons}
           isLoading={isLoading}
-          error={deviceData.error}
+          error={error}
         />
         <LatestAlerts
           alerts={alerts}
           isLoading={isLoading}
-          error={alertData.error}
+          error={null}
         />
       </div>
 
@@ -245,7 +261,7 @@ const Dashboard: React.FC = () => {
           color="red"
           subtitle="Require immediate attention"
           isLoading={isLoading}
-          error={alertData.error}
+          error={null}
         />
         <StatsCard
           title="Active Scans"

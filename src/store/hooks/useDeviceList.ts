@@ -1,31 +1,25 @@
 import { useCallback, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import type { RootState } from '../store';
-import { fetchDevices, clearDevices } from '../slices/devicesSlice';
+import { useDevicesStore } from '../devicesStore';
 
 /**
- * useDeviceList - hook aligned with simplified devicesSlice
+ * useDeviceList - hook using Zustand devicesStore
  * Exposes: devices, loading, error, refresh, clear
  */
 export const useDeviceList = () => {
-  const dispatch = useDispatch();
-
-  const devices = useSelector((state: RootState) => state.devices.devices);
-  const loading = useSelector((state: RootState) => state.devices.loading);
-  const error = useSelector((state: RootState) => state.devices.error);
+  const { devices, loading, error, fetchDevices, clearDevices } = useDevicesStore();
 
   // Initial fetch
   useEffect(() => {
-    dispatch(fetchDevices() as any);
-  }, [dispatch]);
+    fetchDevices();
+  }, [fetchDevices]);
 
   const refresh = useCallback(() => {
-    dispatch(fetchDevices() as any);
-  }, [dispatch]);
+    fetchDevices();
+  }, [fetchDevices]);
 
   const clear = useCallback(() => {
-    dispatch(clearDevices());
-  }, [dispatch]);
+    clearDevices();
+  }, [clearDevices]);
 
   return {
     devices,

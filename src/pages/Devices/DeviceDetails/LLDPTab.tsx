@@ -6,11 +6,7 @@ import {
   Search,
   Filter,
   Link as LinkIcon,
-  Activity,
-  Clock,
   Trash2,
-  Server,
-  Router,
 } from "lucide-react";
 
 interface LLDPTabProps {
@@ -53,7 +49,13 @@ const LLDPTab: React.FC<LLDPTabProps> = ({ device }) => {
       ["Router", "WLAN"],
     ];
     const vendors = ["Cisco", "Dell", "Juniper", "HPE", "Arista"];
-    const statuses: ("up" | "down" | "stale")[] = ["up", "up", "up", "stale", "down"];
+    const statuses: ("up" | "down" | "stale")[] = [
+      "up",
+      "up",
+      "up",
+      "stale",
+      "down",
+    ];
 
     for (let i = 1; i <= 45; i++) {
       const vendor = vendors[i % vendors.length];
@@ -65,25 +67,39 @@ const LLDPTab: React.FC<LLDPTabProps> = ({ device }) => {
         id: `lldp-${i}`,
         localInterface:
           i % 10 === 0
-            ? `${Math.floor(i / 10)}/${(i % 10) || 1}`
+            ? `${Math.floor(i / 10)}/${i % 10 || 1}`
             : `0/0/${(i % 24) + 1}`,
-        remoteChassisId: `${String(i % 256).padStart(2, "0")}:${String((i * 3) % 256).padStart(2, "0")}:${String((i * 5) % 256).padStart(2, "0")}:${String((i * 7) % 256).padStart(2, "0")}:${String((i * 11) % 256).padStart(2, "0")}:${String((i * 13) % 256).padStart(2, "0")}`,
+        remoteChassisId: `${String(i % 256).padStart(2, "0")}:${String(
+          (i * 3) % 256
+        ).padStart(2, "0")}:${String((i * 5) % 256).padStart(2, "0")}:${String(
+          (i * 7) % 256
+        ).padStart(2, "0")}:${String((i * 11) % 256).padStart(2, "0")}:${String(
+          (i * 13) % 256
+        ).padStart(2, "0")}`,
         txCount: 1000 + i * 50 + Math.floor(Math.random() * 500),
         rxCount: 950 + i * 45 + Math.floor(Math.random() * 450),
         remoteSystemName: `${vendor.toLowerCase()}-node-${i}`,
         remotePortId: `Ethernet${(i % 24) + 1}`,
-        managementAddress: i % 3 === 0 ? `10.0.${Math.floor(i / 3)}.${(i % 255) + 1}` : undefined,
-        remoteSystemDescription: `${vendor} ${i % 2 === 0 ? "IOS Software" : "NX-OS Software"}, Version ${12 + (i % 5)}.${i % 10}`,
+        managementAddress:
+          i % 3 === 0
+            ? `10.0.${Math.floor(i / 3)}.${(i % 255) + 1}`
+            : undefined,
+        remoteSystemDescription: `${vendor} ${
+          i % 2 === 0 ? "IOS Software" : "NX-OS Software"
+        }, Version ${12 + (i % 5)}.${i % 10}`,
         ttl: 120,
-        remotePortDescription: i % 2 === 0 ? `Eth${(i % 24) + 1}/2` : `Port ${i}`,
+        remotePortDescription:
+          i % 2 === 0 ? `Eth${(i % 24) + 1}/2` : `Port ${i}`,
         status,
         lastUpdate: isUp
-          ? new Date(Date.now() - (i * 30) * 1000)
+          ? new Date(Date.now() - i * 30 * 1000)
           : isStale
           ? new Date(Date.now() - (180 + i * 10) * 1000)
           : new Date(Date.now() - (3600 + i * 60) * 1000),
         // Additional fields for reference
-        remoteDevice: `${vendor.toLowerCase()}-${String.fromCharCode(97 + (i % 26))}-${i}.example.com`,
+        remoteDevice: `${vendor.toLowerCase()}-${String.fromCharCode(
+          97 + (i % 26)
+        )}-${i}.example.com`,
         remoteInterface: `GigabitEthernet${i % 48}/0/${(i % 24) + 1}`,
         remoteCapabilities: capabilities[i % capabilities.length],
       });
@@ -118,21 +134,34 @@ const LLDPTab: React.FC<LLDPTabProps> = ({ device }) => {
     return `${days}d ago`;
   };
 
-  const uniqueInterfaces = Array.from(new Set(mockLLDP.map((n) => n.localInterface)));
+  const uniqueInterfaces = Array.from(
+    new Set(mockLLDP.map((n) => n.localInterface))
+  );
 
   const filteredLLDP = mockLLDP.filter((neighbor) => {
     const matchesSearch =
-      neighbor.localInterface.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      neighbor.remoteChassisId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      neighbor.remoteSystemName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      neighbor.localInterface
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      neighbor.remoteChassisId
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      neighbor.remoteSystemName
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
       neighbor.remotePortId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      neighbor.managementAddress?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      neighbor.remotePortDescription?.toLowerCase().includes(searchTerm.toLowerCase());
+      neighbor.managementAddress
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      neighbor.remotePortDescription
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase());
 
     const matchesInterface =
       interfaceFilter === "all" || neighbor.localInterface === interfaceFilter;
 
-    const matchesStatus = statusFilter === "all" || neighbor.status === statusFilter;
+    const matchesStatus =
+      statusFilter === "all" || neighbor.status === statusFilter;
 
     return matchesSearch && matchesInterface && matchesStatus;
   });
@@ -143,7 +172,9 @@ const LLDPTab: React.FC<LLDPTabProps> = ({ device }) => {
 
   const handleClearLLDP = (interfaceName: string, neighborId: string) => {
     // TODO: Implement API call to clear LLDP for specific interface
-    console.log(`Clear LLDP for interface: ${interfaceName}, neighbor: ${neighborId}`);
+    console.log(
+      `Clear LLDP for interface: ${interfaceName}, neighbor: ${neighborId}`
+    );
     // This would typically make an API call like:
     // await clearLLDPForInterface(device.id, interfaceName);
     // Then refresh the LLDP data
@@ -258,13 +289,19 @@ const LLDPTab: React.FC<LLDPTabProps> = ({ device }) => {
             <tbody className="divide-y divide-gray-700">
               {filteredLLDP.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-4 py-8 text-center text-gray-400 text-sm">
+                  <td
+                    colSpan={10}
+                    className="px-4 py-8 text-center text-gray-400 text-sm"
+                  >
                     No LLDP neighbors found matching your criteria.
                   </td>
                 </tr>
               ) : (
                 filteredLLDP.map((neighbor) => (
-                  <tr key={neighbor.id} className="hover:bg-gray-700/50 transition-colors">
+                  <tr
+                    key={neighbor.id}
+                    className="hover:bg-gray-700/50 transition-colors"
+                  >
                     <td className="px-4 py-2.5 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <LinkIcon className="w-4 h-4 text-blue-400" />
@@ -281,10 +318,16 @@ const LLDPTab: React.FC<LLDPTabProps> = ({ device }) => {
                     <td className="px-4 py-2.5 whitespace-nowrap">
                       <div className="flex flex-col gap-0.5 text-xs">
                         <div className="text-green-400">
-                          TX: <span className="font-mono font-semibold">{neighbor.txCount?.toLocaleString() || "N/A"}</span>
+                          TX:{" "}
+                          <span className="font-mono font-semibold">
+                            {neighbor.txCount?.toLocaleString() || "N/A"}
+                          </span>
                         </div>
                         <div className="text-blue-400">
-                          RX: <span className="font-mono font-semibold">{neighbor.rxCount?.toLocaleString() || "N/A"}</span>
+                          RX:{" "}
+                          <span className="font-mono font-semibold">
+                            {neighbor.rxCount?.toLocaleString() || "N/A"}
+                          </span>
                         </div>
                       </div>
                     </td>
@@ -304,7 +347,10 @@ const LLDPTab: React.FC<LLDPTabProps> = ({ device }) => {
                       </div>
                     </td>
                     <td className="px-4 py-2.5">
-                      <div className="text-gray-300 text-xs max-w-xs truncate" title={neighbor.remoteSystemDescription || "N/A"}>
+                      <div
+                        className="text-gray-300 text-xs max-w-xs truncate"
+                        title={neighbor.remoteSystemDescription || "N/A"}
+                      >
                         {neighbor.remoteSystemDescription || "N/A"}
                       </div>
                     </td>
@@ -322,7 +368,9 @@ const LLDPTab: React.FC<LLDPTabProps> = ({ device }) => {
                       <button
                         className="p-1.5 rounded hover:bg-red-700/20 text-gray-400 hover:text-red-400 transition-colors"
                         title="Clear LLDP entry for this interface"
-                        onClick={() => handleClearLLDP(neighbor.localInterface, neighbor.id)}
+                        onClick={() =>
+                          handleClearLLDP(neighbor.localInterface, neighbor.id)
+                        }
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Trash2, Download, Upload } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import type { Device } from "../../types";
 import type { NetBoxDevice } from "../../types/netbox";
 import AddDeviceModal from "../modals/AddDeviceModal";
-import ViewDeviceModal from "../modals/ViewDeviceModal";
+import EditDeviceModal from "../modals/EditDeviceModal";
 import DeleteConfirmationModal from "../modals/DeleteConfirmationModal";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { NETBOX_API_ENDPOINTS } from "../../helpers/url_helper";
+import { NETBOX_CONFIG } from "../../config/netbox";
 import ImportDeviceModal from "../modals/ImportDeviceModal";
+import { exportNetBoxDevicesJSON, exportNetBoxDevicesCSV, downloadExportFile } from "../../helpers/api/netboxDevicesApiHelper";
 
 import {
   DataTable,
@@ -34,12 +37,13 @@ const DeviceList: React.FC<DeviceListProps> = ({
   devices,
   loading = false,
   onReload,
-  netboxBaseUrl = "http://172.27.1.69:8000",
-  netboxToken = "f860879ea8dc32e1e80ce72357fe84f40c1b8f18",
+  netboxBaseUrl = NETBOX_CONFIG.BASE_URL,
+  netboxToken = NETBOX_CONFIG.TOKEN,
 }) => {
+  const navigate = useNavigate();
   const [showAddDeviceModal, setShowAddDeviceModal] = useState(false);
-  const [showViewDeviceModal, setShowViewDeviceModal] = useState(false);
-  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [showEditDeviceModal, setShowEditDeviceModal] = useState(false);
+  const [editingDeviceId, setEditingDeviceId] = useState<number | null>(null);
   const [selectedDevices, setSelectedDevices] = useState<Device[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -52,8 +56,21 @@ const DeviceList: React.FC<DeviceListProps> = ({
   });
 
   const handleViewDevice = (device: Device) => {
-    setSelectedDevice(device);
-    setShowViewDeviceModal(true);
+    // Extract NetBox device ID from device.id (format: "device-{id}")
+    const netboxId = device.id.replace("device-", "");
+    // Navigate to device details page
+    navigate(`/device/${netboxId}`, { state: { deviceData: device } });
+  };
+
+  const handleEditDevice = (device: Device) => {
+    // Extract NetBox device ID from device.id (format: "device-{id}")
+    const netboxId = extractNetBoxDeviceId(device);
+    if (netboxId !== null) {
+      setEditingDeviceId(netboxId);
+      setShowEditDeviceModal(true);
+    } else {
+      toast.error("Could not extract device ID for editing");
+    }
   };
 
   useEffect(() => {
@@ -152,8 +169,9 @@ const DeviceList: React.FC<DeviceListProps> = ({
               label: "Edit",
               onClick: (e) => {
                 e.stopPropagation();
+                handleEditDevice(device);
               },
-              className: "text-gray-400 hover:text-gray-300",
+              className: "text-blue-400 hover:text-blue-300",
             },
           ]}
         />
@@ -321,64 +339,88 @@ const DeviceList: React.FC<DeviceListProps> = ({
     await handleDeleteClick();
   };
 
-  const handleBulkExport = () => {
-    const dataToExport = selectedDevices.length > 0 ? selectedDevices : devices;
-    if (dataToExport.length === 0) {
-      toast.info("No devices available to export");
-      return;
+  const handleBulkExport = async (format: 'json' | 'csv' = 'json') => {
+    try {
+      // Extract NetBox device IDs from selected devices or use all devices
+      const deviceIds = selectedDevices.length > 0
+        ? selectedDevices
+            .map((device) => {
+              const idStr = device.id.replace("device-", "");
+              return parseInt(idStr, 10);
+            })
+            .filter((id) => !isNaN(id))
+        : devices
+            .map((device) => {
+              const idStr = device.id.replace("device-", "");
+              return parseInt(idStr, 10);
+            })
+            .filter((id) => !isNaN(id));
+
+      // Build filters based on selected device IDs
+      const filters: Record<string, any> = {};
+      if (deviceIds.length > 0) {
+        // NetBox supports filtering by id__in for multiple IDs
+        filters.id__in = deviceIds.join(',');
+      }
+
+      if (format === 'csv') {
+        // Export as CSV from NetBox API
+        const csvData = await exportNetBoxDevicesCSV(
+          netboxBaseUrl,
+          netboxToken,
+          deviceIds.length > 0 ? filters : undefined
+        );
+        const timestamp = new Date().toISOString().split("T")[0];
+        downloadExportFile(
+          csvData,
+          `netbox_devices_export_${timestamp}.csv`,
+          'text/csv'
+        );
+        toast.success(
+          `Successfully exported ${deviceIds.length > 0 ? deviceIds.length : 'all'} devices as CSV`
+        );
+      } else {
+        // Export as JSON from NetBox API
+        const jsonData = await exportNetBoxDevicesJSON(
+          netboxBaseUrl,
+          netboxToken,
+          deviceIds.length > 0 ? filters : undefined
+        );
+        const timestamp = new Date().toISOString().split("T")[0];
+        downloadExportFile(
+          JSON.stringify({ results: jsonData }, null, 2),
+          `netbox_devices_export_${timestamp}.json`,
+          'application/json'
+        );
+        toast.success(
+          `Successfully exported ${jsonData.length} device(s) as JSON`
+        );
+      }
+    } catch (error: any) {
+      console.error('Export error:', error);
+      toast.error(
+        error?.message || 'Failed to export devices from NetBox'
+      );
     }
-    const headers = [
-      "Device Name",
-      "IP Address",
-      "MAC Address",
-      "Vendor",
-      "Model",
-      "Status",
-      "OS Version",
-      "Location",
-    ];
-
-    const csvRows = dataToExport.map((device) => {
-      const escape = (text: any) =>
-        `"${String(text || "").replace(/"/g, '""')}"`;
-      const ipString = Array.isArray(device.deviceId)
-        ? device.deviceId.join("; ")
-        : device.deviceId;
-
-      return [
-        escape(device.hostname || device.arangoId),
-        escape(ipString),
-        escape(device.mac),
-        escape(device.vendor),
-        escape(device.model),
-        escape(device.status),
-        escape(device.osVersion),
-        escape(device.location?.name),
-      ].join(",");
-    });
-    const csvContent = [headers.join(","), ...csvRows].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-
-    const timestamp = new Date().toISOString().split("T")[0];
-    link.setAttribute("href", url);
-    link.setAttribute("download", `inventory_export_${timestamp}.csv`);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success(`Successfully exported ${dataToExport.length} devices`);
   };
 
   const bulkActions = (
     <div className="flex space-x-2">
       <button
-        onClick={handleBulkExport}
+        onClick={() => handleBulkExport('json')}
         className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center space-x-1"
+        title="Export as JSON"
       >
         <Download className="h-4 w-4" />
-        <span>Export ({selectedDevices.length})</span>
+        <span>Export JSON</span>
+      </button>
+      <button
+        onClick={() => handleBulkExport('csv')}
+        className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 flex items-center space-x-1"
+        title="Export as CSV"
+      >
+        <Download className="h-4 w-4" />
+        <span>Export CSV</span>
       </button>
       <button
         onClick={handleBulkDelete}
@@ -458,6 +500,9 @@ const DeviceList: React.FC<DeviceListProps> = ({
       <ImportDeviceModal
         isOpen={showImportModal}
         onClose={() => setShowImportModal(false)}
+        onSuccess={() => {
+          if (onReload) onReload();
+        }}
       />
 
       <AddDeviceModal
@@ -468,18 +513,17 @@ const DeviceList: React.FC<DeviceListProps> = ({
         }}
       />
 
-      {/* View Device Modal */}
-      {selectedDevice && (
-        <ViewDeviceModal
-          isOpen={showViewDeviceModal}
-          onClose={() => {
-            setShowViewDeviceModal(false);
-            setSelectedDevice(null);
-          }}
-          deviceId={selectedDevice.id.replace("device-", "")}
-          deviceName={selectedDevice.hostname || selectedDevice.arangoId}
-        />
-      )}
+      <EditDeviceModal
+        isOpen={showEditDeviceModal}
+        onClose={() => {
+          setShowEditDeviceModal(false);
+          setEditingDeviceId(null);
+        }}
+        onSuccess={() => {
+          if (onReload) onReload();
+        }}
+        deviceId={editingDeviceId}
+      />
 
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal<NetBoxDevice>

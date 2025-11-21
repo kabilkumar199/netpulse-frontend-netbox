@@ -7,9 +7,7 @@ import { API_ENDPOINTS } from "../../helpers/url_helper";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { adaptNetBoxDevice } from "../../services/netboxAdapter";
-
-const NETBOX_TOKEN = "f860879ea8dc32e1e80ce72357fe84f40c1b8f18";
-const NETBOX_BASE_URL = "http://172.27.1.69:8000";
+import { NETBOX_CONFIG } from "../../config/netbox";
 
 const DevicesPage: React.FC = () => {
   const navigate = useNavigate();
@@ -33,13 +31,13 @@ const DevicesPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get<NetBoxAPIResponse<NetBoxDevice>>(
-        `${NETBOX_BASE_URL}${
+        `${NETBOX_CONFIG.BASE_URL}${
           API_ENDPOINTS.GET_NETBOX_DEVICES_URL || "/api/dcim/devices"
         }`,
         {
           headers: {
             Accept: "application/json",
-            Authorization: `Token ${NETBOX_TOKEN}`,
+            Authorization: `Token ${NETBOX_CONFIG.TOKEN}`,
           },
         }
       );
@@ -69,8 +67,8 @@ const DevicesPage: React.FC = () => {
       devices={devices}
       loading={loading}
       onReload={fetchDevices}
-      netboxBaseUrl={NETBOX_BASE_URL}
-      netboxToken={NETBOX_TOKEN}
+      netboxBaseUrl={NETBOX_CONFIG.BASE_URL}
+      netboxToken={NETBOX_CONFIG.TOKEN}
     />
   );
 };

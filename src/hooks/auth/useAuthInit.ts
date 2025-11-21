@@ -1,10 +1,9 @@
 import { useEffect } from "react";
-import { useDispatch } from "react-redux";
 import {axiosInstance} from "../../services/api/api";
-import { setCredentials, logout } from "../../store/slices/authSlice";
+import { useAuthStore } from "../../store/authStore";
 
 const useAuthInit = () => {
-  const dispatch = useDispatch();
+  const { setCredentials, logout } = useAuthStore();
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
@@ -17,21 +16,19 @@ const useAuthInit = () => {
         console.log("Loaded user:", user);
         const refreshToken = localStorage.getItem("refreshToken");
 
-        dispatch(
-          setCredentials({
-            user,
-            token,
-            refreshToken: refreshToken || undefined,
-          })
-        );
+        setCredentials({
+          user,
+          token,
+          refreshToken: refreshToken || undefined,
+        });
       } catch (err) {
         console.error("Auth Init Error:", err);
-        dispatch(logout());
+        logout();
       }
     };
 
     loadUser();
-  }, []);
+  }, [setCredentials, logout]);
 };
 
 export default useAuthInit;

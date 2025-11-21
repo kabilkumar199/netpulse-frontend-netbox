@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import type { Device } from "../../types";
+import type { NetBoxDevice } from "../../types/netbox";
 import { ArrowLeft } from "lucide-react";
-import api from "../../helpers/api/apiHelper";
-import { API_ENDPOINTS } from "../../helpers/url_helper";
+import axios from "axios";
+import { adaptNetBoxDevice } from "../../services/netboxAdapter";
+import { NETBOX_API_ENDPOINTS } from "../../helpers/url_helper";
+import { NETBOX_CONFIG } from "../../config/netbox";
 import {
   OverviewTab,
   InterfaceTab,
@@ -36,17 +39,27 @@ const DeviceDetails: React.FC = () => {
       return;
     }
 
-    // If no device in navigation state and we have an ID, fetch from API
+    // If no device in navigation state and we have an ID, fetch from NetBox API
     if (id && !navigationDevice) {
       const fetchDevice = async () => {
         setLoading(true);
         try {
-          const deviceResult = await api.get<Device>(
-            `${API_ENDPOINTS.GET_DEVICES_URL}/${id}`
+          const response = await axios.get<NetBoxDevice>(
+            `${NETBOX_CONFIG.BASE_URL}${NETBOX_API_ENDPOINTS.GET_DEVICES_URL}/${id}/`,
+            {
+              headers: {
+                Accept: "application/json",
+                Authorization: `Token ${NETBOX_CONFIG.TOKEN}`,
+              },
+            }
           );
-          setDevice(deviceResult);
-        } catch (error) {
+
+          // Convert NetBox device to internal Device format
+          const convertedDevice = adaptNetBoxDevice(response.data);
+          setDevice(convertedDevice);
+        } catch (error: any) {
           console.error("Error fetching device:", error);
+          // Set error state if needed
         } finally {
           setLoading(false);
         }

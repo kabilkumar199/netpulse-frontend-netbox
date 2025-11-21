@@ -9,7 +9,6 @@ import { toast } from "react-toastify";
 import { API_ENDPOINTS } from '../../helpers/url_helper';
 import {api} from "../../services/api/api";
 import axios from "axios";
-import type { RootState } from "../../store/store";
 import type {
   UserProfileProps,
 } from "../../types";
@@ -74,7 +73,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
 
-  // const { isLoading, error, user } = useSelector((state: RootState) => state.auth);
   const [profile, setProfile] = useState(getInitialProfile);
   const [editProfile, setEditProfile] = useState(profile);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -899,7 +897,4 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
 };
 
 export default UserProfile;
-function useSelector(arg0: (state: RootState) => any): { user: any; } {
-  throw new Error("Function not implemented.");
-}
 

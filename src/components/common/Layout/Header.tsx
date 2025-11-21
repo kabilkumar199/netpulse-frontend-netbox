@@ -14,9 +14,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { useDispatch, useSelector } from "react-redux";
-import type { RootState } from "../../../store/store";
-import { logout, setUser } from "../../../store/slices/authSlice";
+import { useAuthStore } from "../../../store/authStore";
 import {api} from "../../../services/api/api";
 import { API_ENDPOINTS } from "../../../helpers/url_helper";
 
@@ -47,8 +45,7 @@ const Header: React.FC<HeaderProps> = ({
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
 
-  const dispatch = useDispatch();
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user, logout, setUser } = useAuthStore();
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -62,7 +59,7 @@ const Header: React.FC<HeaderProps> = ({
       toast.error("Logout failed on server. Logging out locally.");
 
     } finally {
-      dispatch(logout());
+      logout();
       navigate("/login");
       setShowUserMenu(false);
       setIsLoggingOut(false);
@@ -117,9 +114,10 @@ const Header: React.FC<HeaderProps> = ({
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
     }
-  }, []);
+  }, [setUser]);
 
   const handleSave = () => {
     if (activeTab === "save") {

@@ -98,6 +98,7 @@ export const ROUTES = {
     MANUFACTURERS: "/organization/manufacturers",
     RACKS: "/organization/racks",
     DEVICE_ROLES: "/organization/device-roles",
+    DEVICE_TYPES: "/organization/device-types",
   },
   EVENTS: {
 
@@ -196,6 +197,12 @@ export const NAVIGATION_ITEMS = [
         label: "Device Roles",
         icon: "user-check",
         path: ROUTES.ORGANIZATION.DEVICE_ROLES,
+      },
+      {
+        id: "device-types",
+        label: "Device Types",
+        icon: "package",
+        path: ROUTES.ORGANIZATION.DEVICE_TYPES,
       },
     ],
   },
